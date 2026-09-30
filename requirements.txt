@@ -1,0 +1,20 @@
+# Core
+numpy>=1.26
+pandas>=2.1
+scikit-learn>=1.4
+pyyaml>=6.0
+tqdm>=4.66
+
+# Imaging
+pydicom>=2.4
+opencv-python-headless>=4.9
+Pillow>=10.2
+
+# Deep learning
+torch>=2.2
+torchvision>=0.17
+timm>=0.9.16          # pretrained CNN/ViT backbones (EfficientNetV2, ConvNeXt, DINOv2 wrappers)
+sentence-transformers>=2.6   # multilingual text encoder (LaBSE / multilingual-e5)
+
+# Experiment tracking (optional but recommended — see README)
+# wandb>=0.16

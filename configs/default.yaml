@@ -1,0 +1,91 @@
+# ---------------------------------------------------------------------------
+# Default configuration for the RSNA Knee Abnormality Detection pipeline.
+#
+# IMPORTANT: the `data` section below reflects our BEST-GUESS assumption about
+# the competition's file layout, based on the public competition description.
+# We have not yet inspected the real downloaded data ourselves. Track C:
+# please open the actual train.csv / folder structure on Kaggle and correct
+# the paths and column names here on day 1 — everything downstream (dataset.py,
+# cv_split.py, preprocess.py) reads its layout from THIS file, so fixing it in
+# one place fixes the whole pipeline. Search this repo for "ASSUMPTION" to find
+# every spot that will likely need a small edit once you see the real data.
+# ---------------------------------------------------------------------------
+
+seed: 42
+
+labels:
+  # Order matters: this is the column order used everywhere (loss, metrics,
+  # submission.csv). Must match sample_submission.csv exactly.
+  - ACL
+  - MCL
+  - Medial Meniscus
+  - Lateral Meniscus
+  - Medial OA
+  - Lateral OA
+  - PF OA
+  - Effusion
+  - Synovitis
+  - "Baker's"
+  - Contusion
+  - Fracture
+
+data:
+  # ASSUMPTION: root folder Kaggle mounts the competition data into.
+  raw_root: /kaggle/input/rsna-knee-abnormality-detection
+  # ASSUMPTION: training label file with one row per StudyInstanceUID and the
+  # 12 label columns above (0/1 or missing). Adjust filename once confirmed.
+  train_csv: train.csv
+  sample_submission_csv: sample_submission.csv
+  # ASSUMPTION: a table mapping StudyInstanceUID -> free-text radiology report
+  # (+ optionally a language code column, e.g. "report_language"). If reports
+  # instead live inside train.csv as an extra column, set this to null and set
+  # `report_column` below instead.
+  reports_csv: train_reports.csv
+  report_text_column: report_text
+  report_language_column: report_language
+  # ASSUMPTION: DICOM series live under raw_root/train_images/<StudyInstanceUID>/...
+  train_images_dir: train_images
+  test_images_dir: test_images
+
+  # Where the preprocessed cache (see scripts/build_cache.py) is written.
+  cache_dir: /kaggle/working/cache
+  cache_image_size: 224      # per-slice resize (H=W) before saving to cache
+  slices_per_series: 20      # uniform slices sampled per series after caching
+  max_series_per_study: 6    # cap on how many series/views we keep per study
+
+cv:
+  n_folds: 5
+  # ASSUMPTION: the patient/subject identifier column used to prevent leakage
+  # across folds. If the data only exposes StudyInstanceUID with no separate
+  # patient id, fall back to grouping by StudyInstanceUID (set equal to the
+  # study id column) — see cv_split.py.
+  group_column: PatientID
+  splits_csv: cv_splits.csv   # written by scripts/make_cv_splits.py
+
+model:
+  image_backbone: tf_efficientnetv2_s.in21k_ft_in1k   # timm model name; swap freely
+  image_embed_dim: 512
+  text_encoder: sentence-transformers/LaBSE            # multilingual, handles the ~12 report languages
+  fusion_dim: 512
+  fusion_heads: 8
+  dropout: 0.2
+
+train:
+  batch_size: 8
+  num_workers: 4
+  epochs_baseline: 15
+  epochs_teacher: 20
+  epochs_distill: 15
+  lr: 3.0e-4
+  weight_decay: 1.0e-5
+  warmup_epochs: 1
+  distill_temperature: 3.0
+  distill_alpha: 0.5     # weight on distillation loss vs. hard-label loss
+  contrastive_weight: 0.3
+  early_stopping_patience: 4
+  amp: true               # mixed precision — important for Kaggle GPU time budget
+
+output:
+  checkpoint_dir: /kaggle/working/checkpoints
+  log_dir: /kaggle/working/logs
+  submission_path: /kaggle/working/submission.csv

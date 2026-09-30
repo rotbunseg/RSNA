@@ -1,0 +1,20 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+build/
+dist/
+
+# Large/generated artifacts — never commit these to GitHub
+cache/
+checkpoints/
+logs/
+*.npy
+*.pt
+*.pth
+submission.csv
+cv_splits.csv
+
+.ipynb_checkpoints/
+.DS_Store
+.env
